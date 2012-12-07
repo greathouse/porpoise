@@ -21,20 +21,30 @@ if (!dryRun) {
 	}
 }
 
-println 'Applied the following:'
-scripts.findAll{it.needsUp}.each {
-	println "\t${it.changeset}/${it.script}"
+def ups = scripts.findAll{it.needsUp}
+if (ups) {
+	println 'Appling the following...'
+	ups.each {
+		println "\t${it.changeset}/${it.script}"
+	}
 }
 
-println 'Removed the following:'
-scripts.findAll{it.needsDown}.each {
-	println "\t${it.changeset}/${it.script}"
+def downs = scripts.findAll{it.needsDown}
+if (downs) {
+	println 'Removed the following:'
+	downs.each {
+		println "\t${it.changeset}/${it.script}"
+	}
 }
 
-println 'WARNING: THE FOLLOWING HAVE CHANGED'
-scripts.findAll{it.hasChanged}.each {
-	println "\t${it.changeset}/${it.script}"
+def changed = scripts.findAll{it.hasChanged}
+if (changed) {
+	println 'WARNING: THE FOLLOWING HAVE CHANGED'
+	changed.each {
+		println "\t${it.changeset}/${it.script}"
+	}
 }
+
 
 println 'Done!'
 
@@ -82,7 +92,7 @@ def determineScriptsToRun() {
 			def down = (upAndDown.size() == 2) ? upAndDown[1].trim() : ""
 			def md5 = generateMd5(file)
 			
-			def applied = scripts.find { it.changeset == changeset && script == script }
+			def applied = scripts.find { it.changeset == changeset && it.script == script }
 			if (applied == null) {
 				scripts.add([
 					changeset:changeset,
@@ -114,7 +124,6 @@ def executeScript(scriptMetadata) {
 	
 	if (scriptMetadata.needsDown) {
 		scriptMetadata.down.split(";").each {
-			println it
 			sql.execute(it)
 		}
 		sql.execute("delete from porp_schema_log where md5 = ${scriptMetadata.md5}")
