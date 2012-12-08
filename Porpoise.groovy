@@ -1,22 +1,30 @@
 @GrabConfig(systemClassLoader=true)
-@Grapes(
-	@Grab(group='com.h2database', module='h2', version='1.3.170')
-)
+@Grapes([
+	@Grab(group='com.h2database', module='h2', version='1.3.170'),
+	@Grab(group='net.sourceforge.jtds', module='jtds', version='1.2.4')
+])
 
 import groovy.sql.*
 import java.security.MessageDigest
 
 def dbUrl = "jdbc:h2:tcp://localhost/~/test"
-sql = Sql.newInstance(dbUrl, 'sa', '', "org.h2.Driver")
+//sql = Sql.newInstance(dbUrl, 'sa', '', "org.h2.Driver")
+sql = Sql.newInstance('jdbc:jtds:sqlserver://localhost/porp;instance=sqlexpress', 'net.sourceforge.jtds.jdbc.Driver')
+
+databaseProduct = sql.connection.metaData.databaseProductName
+
+println "Connected to a \"${databaseProduct}\" database"
 
 scriptDirectory = new File(/C:\Users\kofspades\projects\porpoise\SampleScripts/)
 dryRun = false
+
+scriptLogLines = []
 
 checkAndCreateLogTable()
 
 def scripts = determineScriptsToRun()
 if (!dryRun) {
-	scripts.each { scriptMetadata ->	
+	scripts.each { scriptMetadata ->
 		executeScript(scriptMetadata)
 	}
 }
@@ -55,17 +63,33 @@ def checkAndCreateLogTable() {
 	if (tables.next()) { return }
 	
 	print "Preparing Porpoise database tables....."
-	sql.execute("""create table PORP_SCHEMA_LOG (
+	executeSql("""create table PORP_SCHEMA_LOG (
 		ID varchar(50),
 		CHANGESET varchar(500),
 		SCRIPT_NAME varchar(500),
 		MD5 varchar(32),
-		DATE_APPLIED timestamp,
-		UP_SCRIPT clob,
-		DOWN_SCRIPT clob
+		DATE_APPLIED ${timestampType()},
+		UP_SCRIPT ${largeObjectType()},
+		DOWN_SCRIPT ${largeObjectType()}
 	);
-	""")
+	""".toString())
 	println "SUCCESS"
+}
+
+def largeObjectType(def dbMetaData) {
+	switch (databaseProduct.toLowerCase()) {
+		case "microsoft sql server":	return "nvarchar(max)"
+		case "h2":
+		default: return "clob"
+	}
+}
+
+def timestampType(def dbMetaData) {
+	switch (databaseProduct.toLowerCase()) {
+		case "microsoft sql server":	return "datetime"
+		case "h2":
+		default: return "timestamp"
+	}
 }
 
 def determineScriptsToRun() {
@@ -116,19 +140,24 @@ def determineScriptsToRun() {
 def executeScript(scriptMetadata) {
 	if (scriptMetadata.needsUp) {
 		scriptMetadata.up.split(";").each {
-			sql.execute(it)
+			executeSql(it)
 		}
-		sql.execute("insert into porp_schema_log (id, changeset, script_name, md5, date_applied, up_script, down_script) values (${UUID.randomUUID().toString()}, ${scriptMetadata.changeset}, ${scriptMetadata.script}, ${scriptMetadata.md5}, ${new Date()}, ${scriptMetadata.up}, ${scriptMetadata.down});")
+		sql.execute("insert into porp_schema_log (id, changeset, script_name, md5, date_applied, up_script, down_script) values (${UUID.randomUUID().toString()}, ${scriptMetadata.changeset}, ${scriptMetadata.script}, ${scriptMetadata.md5}, ${new java.sql.Date(new Date().time)}, ${scriptMetadata.up}, ${scriptMetadata.down});")
 		return
 	}
 	
 	if (scriptMetadata.needsDown) {
 		scriptMetadata.down.split(";").each {
-			sql.execute(it)
+			executeSql(it)
 		}
-		sql.execute("delete from porp_schema_log where md5 = ${scriptMetadata.md5}")
+		executeSql("delete from porp_schema_log where md5 = ${scriptMetadata.md5}")
 		return
 	}
+}
+
+def executeSql(def stmt) {
+	scriptLogLines << stmt
+	sql.execute(stmt)
 }
 
 def generateMd5(final file) {
