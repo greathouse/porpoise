@@ -7,16 +7,34 @@
 import groovy.sql.*
 import java.security.MessageDigest
 
-def dbUrl = "jdbc:h2:tcp://localhost/~/test"
-//sql = Sql.newInstance(dbUrl, 'sa', '', "org.h2.Driver")
-sql = Sql.newInstance('jdbc:jtds:sqlserver://localhost/porp;instance=sqlexpress', 'net.sourceforge.jtds.jdbc.Driver')
+def cli = new CliBuilder(usage: "${this.class.simpleName}.groovy")
+cli.with {
+	F (longOpt: 'force-removals', 'Indicates that removals SHOULD run. Otherwise, script removals are only noted.')
+	D (longOpt: 'dry-run', 'Outputs log information only. Does not run sql scripts')
+	d (longOpt: 'dir', args: 1, required: false, 'Path to SQL script directory (Optional. Defaults to startup-directory)')
+	p (longOpt: 'database-password', args: 1, required: false, 'Database Password (Optional)')
+	U (longOpt: 'url', args: 1, required: true, 'JDBC URL definition')
+	u (longOpt: 'database-user', args: 1, required: false, 'Database user (Optional)')
+}
 
+
+def opts = cli.parse(args)
+if (!opts) {
+	System.exit(1)
+}
+
+dryRun = opts.D
+forceRemovals = opts.F
+
+def dbUrl = opts.U
+def dbUser = opts.u ?: null
+def dbPassword = opts.p ?: null
+def scriptDirectoryPath = opts.d ?: System.getProperty('user.dir')
+scriptDirectory = new File(scriptDirectoryPath)
+
+sql = Sql.newInstance(dbUrl, dbUser, dbPassword, 'net.sourceforge.jtds.jdbc.Driver')
 databaseProduct = sql.connection.metaData.databaseProductName
-
 println "Connected to a \"${databaseProduct}\" database"
-
-scriptDirectory = new File(/C:\Users\kofspades\projects\porpoise\SampleScripts/)
-dryRun = false
 
 scriptLogLines = []
 
@@ -29,6 +47,7 @@ if (!dryRun) {
 	}
 }
 
+println '\n---------------------------------------'
 def ups = scripts.findAll{it.needsUp}
 if (ups) {
 	println 'Appling the following...'
@@ -39,7 +58,8 @@ if (ups) {
 
 def downs = scripts.findAll{it.needsDown}
 if (downs) {
-	println 'Removed the following:'
+	if (forceRemovals) { println 'Removed the following:' }
+	else { println 'Scripts marked for removal, use "-F" option to force removals'}
 	downs.each {
 		println "\t${it.changeset}/${it.script}"
 	}
@@ -146,7 +166,7 @@ def executeScript(scriptMetadata) {
 		return
 	}
 	
-	if (scriptMetadata.needsDown) {
+	if (forceRemovals && scriptMetadata.needsDown) {
 		scriptMetadata.down.split(";").each {
 			executeSql(it)
 		}
@@ -157,6 +177,9 @@ def executeScript(scriptMetadata) {
 
 def executeSql(def stmt) {
 	scriptLogLines << stmt
+	
+	if (dryRun) return
+	
 	sql.execute(stmt)
 }
 
