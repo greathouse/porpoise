@@ -244,11 +244,11 @@ def generateMd5(final file) {
    return bigInt.toString(16)
 }
 
-private class AbortException extends Exception {
+public class AbortException extends Exception {
 	public AbortException(Throwable e) { super(e) }
 }
 
-private class SqlStatementExecutionException extends Exception {
+public class SqlStatementExecutionException extends Exception {
 	public String stmt
 	public SqlStatementExecutionException(Throwable e) { super(e) }
 }
