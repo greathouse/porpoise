@@ -4,7 +4,6 @@ porpoise
 Database Schema Patching Script
 
 <pre>
-Usage
 usage: Porpoise.groovy
  -D,--dry-run                   Outputs log information only. Does not run sql scripts
  -d,--dir <arg>                 Path to SQL script directory (Optional. Defaults to startup-directory)
