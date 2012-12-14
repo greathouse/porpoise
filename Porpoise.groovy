@@ -44,7 +44,11 @@ checkAndCreateLogTable()
 def scripts = determineScriptsToRun()
 if (!dryRun) {
 	try {
-		scripts.each { scriptMetadata ->
+		scripts.findAll{it.needsUp}.each { scriptMetadata ->
+			executeScript(scriptMetadata)
+		}
+		
+		scripts.findAll{it.needsDown}.sort{a,b -> b.dateApplied <=> a.dateApplied }.each { scriptMetadata ->
 			executeScript(scriptMetadata)
 		}
 	}
@@ -62,7 +66,7 @@ if (ups) {
 	}
 }
 
-def downs = scripts.findAll{it.needsDown && it.applied}
+def downs = scripts.findAll{it.needsDown && it.applied}.sort{a,b -> b.dateApplied <=> a.dateApplied }
 if (downs) {
 	println '\nRemoved the following:'
 	downs.each {
@@ -153,7 +157,8 @@ def determineScriptsToRun() {
 			md5:appliedScript.md5,
 			needsUp:false,
 			needsDown:true, //initially expect not to be present. Will be checked later
-			hasChanged:false
+			hasChanged:false,
+			dateApplied:appliedScript.date_applied
 		])
 	}
 		
