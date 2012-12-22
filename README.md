@@ -85,7 +85,7 @@ Porpoise has been tested with the following databases:
 But really, it is not difficult to add more database engines. Porpoise looks for a table called "PORP_SCHEMA_LOG". 
 If this table does not exist, it attempts to create it. Database engines use different datatypes for clobs,
 timestamps, etc. If your database engine is not supported, please review the script and make a pull request. Otherwise,
-you might be able to create the table manually. Below is a sample create table statment. Modify the datatypes to match
+you might be able to create the table manually. Below is a sample create table statement. Modify the datatypes to match
 your database engines preference.
 ```sql
 CREATE TABLE PORP_SCHEMA_LOG(
