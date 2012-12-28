@@ -1,3 +1,4 @@
+org.apache.ivy.util.Message.setDefaultLogger(new org.apache.ivy.util.DefaultMessageLogger(org.apache.ivy.util.Message.MSG_DEBUG))
 @GrabConfig(systemClassLoader=true)
 @Grapes([
 	@Grab(group='com.h2database', module='h2', version='1.3.170'),
@@ -221,6 +222,7 @@ def executeScript(scriptMetadata) {
 }
 
 def executeSql(def stmt) {
+	if (stmt == null || "".equals(stmt)) return
 	scriptLogLines << stmt
 	
 	if (dryRun) return
