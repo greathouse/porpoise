@@ -164,7 +164,8 @@ def determineScriptsToRun() {
 		
 	scriptDirectory.eachDir { dir ->
 		def changeset = dir.name
-		dir.listFiles().sort{a, b -> a.name <=> b.name}.each { file ->
+		
+		dir.listFiles().findAll{f -> f.name ==~ /.*.*sql/}.sort{a -> a.name}.each { file ->
 			def script = file.name
 			def upAndDown = file.text.split('(?i)--down')
 			def up = upAndDown[0].trim()
