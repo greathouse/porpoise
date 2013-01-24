@@ -110,6 +110,8 @@ if (needingDown) {
 
 println 'Done!'
 
+System.exit((failed)?1:0)
+
 /////////////////////////////////////
 
 def checkAndCreateLogTable() {
