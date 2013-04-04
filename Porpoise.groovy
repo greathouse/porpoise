@@ -44,11 +44,11 @@ checkAndCreateLogTable()
 def scripts = determineScriptsToRun()
 if (!dryRun) {
 	try {
-		scripts.findAll{it.needsUp}.each { scriptMetadata ->
+		scripts.findAll{it.needsDown}.sort{a,b -> b.dateApplied <=> a.dateApplied }.each { scriptMetadata ->
 			executeScript(scriptMetadata)
 		}
 		
-		scripts.findAll{it.needsDown}.sort{a,b -> b.dateApplied <=> a.dateApplied }.each { scriptMetadata ->
+		scripts.findAll{it.needsUp}.each { scriptMetadata ->
 			executeScript(scriptMetadata)
 		}
 	}
@@ -58,18 +58,18 @@ if (!dryRun) {
 }
 
 println '\n---------------------------------------'
-def ups = scripts.findAll{it.needsUp && it.applied}
-if (ups) {
-	println '\nApplied the following:'
-	ups.each {
-		println "\t${it.changeset}/${it.script}"
-	}
-}
-
 def downs = scripts.findAll{it.needsDown && it.applied}.sort{a,b -> b.dateApplied <=> a.dateApplied }
 if (downs) {
 	println '\nRemoved the following:'
 	downs.each {
+		println "\t${it.changeset}/${it.script}"
+	}
+}
+
+def ups = scripts.findAll{it.needsUp && it.applied}
+if (ups) {
+	println '\nApplied the following:'
+	ups.each {
 		println "\t${it.changeset}/${it.script}"
 	}
 }
@@ -163,36 +163,41 @@ def determineScriptsToRun() {
 			dateApplied:appliedScript.date_applied
 		])
 	}
-		
-	scriptDirectory.eachDir { dir ->
-		def changeset = dir.name
-		
-		dir.listFiles().findAll{f -> f.name ==~ /.*.*sql/}.sort{a -> a.name}.each { file ->
-			def script = file.name
-			def upAndDown = file.text.split('(?i)--down')
-			def up = upAndDown[0].trim()
-			def down = (upAndDown.size() == 2) ? upAndDown[1].trim() : ""
-			def md5 = generateMd5(file)
-			
-			def applied = scripts.find { it.changeset == changeset && it.script == script }
-			if (applied == null) {
-				scripts.add([
-					changeset:changeset,
-					script:script,
-					up:up,
-					down:down,
-					md5:md5,
-					needsUp:true,
-					needsDown:false,
-					hasChanged:false
-				])
-				return
-			}
-			applied.needsDown = false
-			if(applied.md5 != md5) { applied.hasChanged = true }
-		}
-	}
+	
+	gatherSqlFiles('', scriptDirectory, scripts)
+	
 	return scripts
+}
+
+def gatherSqlFiles(start, nextDir, scripts) {
+	nextDir.eachDir { dir ->
+		gatherSqlFiles(((start)?start+'/':'')+dir.name, dir, scripts)
+	}
+	def changeset = start
+	nextDir.listFiles().findAll{f -> f.name ==~ /.*.*sql/}.sort{a -> a.name}.each { file ->
+		def script = file.name
+		def upAndDown = file.text.split('(?i)--down')
+		def up = upAndDown[0].trim()
+		def down = (upAndDown.size() == 2) ? upAndDown[1].trim() : ""
+		def md5 = generateMd5(file)
+		
+		def applied = scripts.find { it.changeset == changeset && it.script == script }
+		if (applied == null) {
+			scripts.add([
+				changeset:changeset,
+				script:script,
+				up:up,
+				down:down,
+				md5:md5,
+				needsUp:true,
+				needsDown:false,
+				hasChanged:false
+			])
+			return
+		}
+		applied.needsDown = false
+		if(applied.md5 != md5) { applied.hasChanged = true }
+	}
 }
 
 def executeScript(scriptMetadata) {
