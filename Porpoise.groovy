@@ -84,7 +84,7 @@ if (changed) {
 
 def failed = scripts.findAll{it.failed}
 if (failed) {
-	println '\nFailed on the following scripts. (NOTE: These scripts may be paritally applied)'
+	println '\nFailed on the following scripts. (NOTE: These scripts may be partially applied)'
 	failed.each {
 		println "\t${it.changeset}/${it.script}"
 		println "\t\tFailed Statement: ${it.failedStatement}"
