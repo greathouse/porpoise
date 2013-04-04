@@ -4,6 +4,34 @@
 	@Grab(group='net.sourceforge.jtds', module='jtds', version='1.2.4')
 ])
 
+final VERSION = "1.5"
+println '''
+                                         .--.
+                  _______             .-"  .'
+          .---u"""       """"---._  ."    %
+        .'                        "--.    %
+   __.--'  o                          "".. "
+  (____.                                  ":
+   `----.__                                 ".
+           `----------__                     ".
+                 ".   . ""--.                 ".
+                   ". ". bIt ""-.              ".
+                     "-.)        ""-.           ".
+                                     "".         ".
+                                        "".       ".
+                                           "".      ".
+                                              "".    ".
+                        ^~^~^~^~^~^~^~^~^~^~^~^~^"".  "^~^~^~^~^
+                                              ^~^~^~^  ~^~
+                                                   ^~^~^~
+
+
+'''
+println """
+Porpoise Database Migration - Version $VERSION
+https://github.com/greathouse/porpoise
+"""
+
 import groovy.sql.*
 import java.security.MessageDigest
 
