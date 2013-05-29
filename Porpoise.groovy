@@ -4,7 +4,7 @@
 	@Grab(group='net.sourceforge.jtds', module='jtds', version='1.2.4')
 ])
 
-final VERSION = "1.5"
+final VERSION = "1.6"
 println '''
                                          .--.
                   _______             .-"  .'
@@ -15,7 +15,7 @@ println '''
    `----.__                                 ".
            `----------__                     ".
                  ".   . ""--.                 ".
-                   ". ". bIt ""-.              ".
+                   ". ".     ""-.              ".
                      "-.)        ""-.           ".
                                      "".         ".
                                         "".       ".
