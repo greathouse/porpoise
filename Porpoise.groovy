@@ -198,7 +198,7 @@ def determineScriptsToRun() {
 }
 
 def gatherSqlFiles(start, nextDir, scripts) {
-	nextDir.eachDir { dir ->
+	nextDir.listFiles({ it.isDirectory() } as FileFilter).sort{a -> a.name}.each { dir ->
 		gatherSqlFiles(((start)?start+'/':'')+dir.name, dir, scripts)
 	}
 	def changeset = start
