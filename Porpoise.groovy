@@ -4,7 +4,7 @@
 	@Grab(group='net.sourceforge.jtds', module='jtds', version='1.2.4')
 ])
 
-final VERSION = "1.7"
+final VERSION = "1.8"
 println '''
                                          .--.
                   _______             .-"  .'
@@ -231,7 +231,7 @@ def gatherSqlFiles(start, nextDir, scripts) {
 def executeScript(scriptMetadata) {
 	try {
 		if (scriptMetadata.needsUp) {
-			scriptMetadata.up.split(";[\r\n]?[\n]?").each {
+			scriptMetadata.up.split(";[[\r\n]?[\n]?]+").each {
 				executeSql(it)
 			}
 			executeSql("insert into porp_schema_log (id, changeset, script_name, md5, date_applied, up_script, down_script) values (${UUID.randomUUID().toString()}, ${scriptMetadata.changeset}, ${scriptMetadata.script}, ${scriptMetadata.md5}, ${new java.sql.Timestamp(new Date().time)}, ${scriptMetadata.up}, ${scriptMetadata.down});")
