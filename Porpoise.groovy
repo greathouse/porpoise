@@ -4,7 +4,7 @@
 	@Grab(group='net.sourceforge.jtds', module='jtds', version='1.2.4')
 ])
 
-final VERSION = "1.8"
+final VERSION = "1.9"
 println '''
                                          .--.
                   _______             .-"  .'
@@ -43,6 +43,7 @@ cli.with {
 	p (longOpt: 'database-password', args: 1, required: false, 'Database Password (Optional)')
 	U (longOpt: 'url', args: 1, required: true, 'JDBC URL definition')
 	u (longOpt: 'database-user', args: 1, required: false, 'Database user (Optional)')
+	_ (longOpt: 'no-exit', args:0, required:false, 'Does not issue the System.exit command. Useful when embedding porpoise inside applications')
 }
 
 
@@ -58,6 +59,7 @@ def dbUrl = opts.U
 def dbUser = opts.u ?: null
 def dbPassword = opts.p ?: null
 def scriptDirectoryPath = opts.d ?: System.getProperty('user.dir')
+def noExit = opts.'no-exit' ?: false
 scriptDirectory = new File(scriptDirectoryPath)
 
 sql = Sql.newInstance(dbUrl, dbUser, dbPassword, 'net.sourceforge.jtds.jdbc.Driver')
@@ -138,7 +140,7 @@ if (needingDown) {
 
 println 'Done!'
 
-System.exit((failed)?1:0)
+if (!noExit) { System.exit((failed)?1:0) }
 
 /////////////////////////////////////
 
