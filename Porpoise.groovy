@@ -38,6 +38,7 @@ import java.security.MessageDigest
 def cli = new CliBuilder(usage: "${this.class.simpleName}.groovy")
 cli.with {
 	F (longOpt: 'force-removals', 'Indicates that removals SHOULD run. Otherwise, script removals are only noted.')
+	SF (longOpt: 'super-force-removals', 'Indicates that removals SHOULD run AND MODIFIED SCRIPTS SHOULD BE REFRESHED. Otherwise, script removals are only noted.')
 	D (longOpt: 'dry-run', 'Outputs log information only. Does not run sql scripts')
 	d (longOpt: 'dir', args: 1, required: false, 'Path to SQL script directory (Optional. Defaults to startup-directory)')
 	p (longOpt: 'database-password', args: 1, required: false, 'Database Password (Optional)')
@@ -54,6 +55,7 @@ if (!opts) {
 
 dryRun = opts.D
 forceRemovals = opts.F
+superForceRemovals = opts.SF
 
 def dbUrl = opts.U
 def dbUser = opts.u ?: null
@@ -74,6 +76,12 @@ checkAndCreateLogTable()
 def scripts = determineScriptsToRun()
 if (!dryRun) {
 	try {
+		if (superForceRemovals) {
+			scripts.findAll{it.hasChanged}.sort{a,b -> b.dateApplied <=> a.dateApplied }.each { scriptMetadata ->
+				executeScript(scriptMetadata)
+			}
+		}
+	
 		scripts.findAll{it.needsDown}.sort{a,b -> b.dateApplied <=> a.dateApplied }.each { scriptMetadata ->
 			executeScript(scriptMetadata)
 		}
@@ -106,7 +114,9 @@ if (ups) {
 
 def changed = scripts.findAll{it.hasChanged}
 if (changed) {
-	println '\nWARNING: THE FOLLOWING HAVE CHANGED'
+	def warning = "\nWARNING: THE FOLLOWING HAVE CHANGED"
+	warning += (superForceRemovals) ? " AND HAVE BEEN SUPERFORCED!!!!!!" : ''
+	println warning
 	changed.each {
 		println "\t${it.changeset}/${it.script}"
 	}
@@ -226,12 +236,32 @@ def gatherSqlFiles(start, nextDir, scripts) {
 			return
 		}
 		applied.needsDown = false
-		if(applied.md5 != md5) { applied.hasChanged = true }
+		if(applied.md5 != md5) { 
+			applied.hasChanged = true
+			applied.oldDown = applied.down
+			applied.down = down
+			applied.oldMd5 = applied.md5
+			applied.md5 = md5
+			applied.up = up
+		}
 	}
 }
 
 def executeScript(scriptMetadata) {
 	try {
+		if (superForceRemovals && scriptMetadata.hasChanged) {
+			scriptMetadata.oldDown.split(";").each {
+				executeSql(it)
+			}
+			executeSql("delete from porp_schema_log where md5 = ${scriptMetadata.oldMd5}")
+			scriptMetadata.up.split(";[[\r\n]?[\n]?]+").each {
+				executeSql(it)
+			}
+			executeSql("insert into porp_schema_log (id, changeset, script_name, md5, date_applied, up_script, down_script) values (${UUID.randomUUID().toString()}, ${scriptMetadata.changeset}, ${scriptMetadata.script}, ${scriptMetadata.md5}, ${new java.sql.Timestamp(new Date().time)}, ${scriptMetadata.up}, ${scriptMetadata.down});")
+			scriptMetadata.applied = true
+			return
+		}
+		
 		if (scriptMetadata.needsUp) {
 			scriptMetadata.up.split(";[[\r\n]?[\n]?]+").each {
 				executeSql(it)
