@@ -44,6 +44,7 @@ cli.with {
 	U (longOpt: 'url', args: 1, required: true, 'JDBC URL definition')
 	u (longOpt: 'database-user', args: 1, required: false, 'Database user (Optional)')
 	_ (longOpt: 'no-exit', args:0, required:false, 'Does not issue the System.exit command. Useful when embedding porpoise inside applications')
+	_ (longOpt: 'post-apply-action', args:1, required:false, 'Process to run after all scripts have been applied. WILL ONLY RUN IF NEW "UP" SCRIPTS HAVE BEEN APPLIED"')
 }
 
 
@@ -61,6 +62,7 @@ def dbPassword = opts.p ?: null
 def scriptDirectoryPath = opts.d ?: System.getProperty('user.dir')
 def noExit = opts.'no-exit' ?: false
 scriptDirectory = new File(scriptDirectoryPath)
+def postApplyProcess = opts.'post-apply-action'
 
 sql = Sql.newInstance(dbUrl, dbUser, dbPassword, 'net.sourceforge.jtds.jdbc.Driver')
 
@@ -136,6 +138,12 @@ if (needingDown) {
 	needingDown.each {
 		println "\t${it.changeset}/${it.script}"
 	}
+}
+
+if (ups && postApplyProcess) {
+	println "\n\nExecuting \"${postApplyProcess}\"..."
+	def result = postApplyProcess.execute()
+	println result.text
 }
 
 println 'Done!'
