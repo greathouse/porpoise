@@ -31,6 +31,7 @@ msg += "\n\n\nChangesets Applied"
 changesets.each { msg += '\n\t' + it }
 
 def ant = new AntBuilder()
+ant.project.buildListeners[0].messageOutputLevel = 0 //Suppress AntBuilder Logging
 ant.mail(mailhost:server, mailport:port,
          subject:sub){
     from(address:f)

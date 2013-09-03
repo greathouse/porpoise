@@ -140,11 +140,11 @@ if (needingDown) {
 	}
 }
 
-//if (ups && postApplyProcess) {
+if (ups && postApplyProcess) {
 	println "\n\nExecuting \"${postApplyProcess}\"..."
 	def result = (postApplyProcess+" \"${ups.collect}\"").execute()
 	println result.text
-//}
+}
 
 println 'Done!'
 
