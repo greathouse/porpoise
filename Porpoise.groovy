@@ -4,7 +4,7 @@
 	@Grab(group='net.sourceforge.jtds', module='jtds', version='1.2.4')
 ])
 
-final VERSION = "1.9"
+final VERSION = "1.SNAPSHOT"
 println '''
                                          .--.
                   _______             .-"  .'
@@ -140,11 +140,11 @@ if (needingDown) {
 	}
 }
 
-if (ups && postApplyProcess) {
+//if (ups && postApplyProcess) {
 	println "\n\nExecuting \"${postApplyProcess}\"..."
-	def result = postApplyProcess.execute()
+	def result = (postApplyProcess+" \"${ups.collect}\"").execute()
 	println result.text
-}
+//}
 
 println 'Done!'
 

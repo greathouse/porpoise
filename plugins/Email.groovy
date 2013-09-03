@@ -26,9 +26,6 @@ def t = opts.ts
 def sub = opts.s
 def msg = opts.m ?: ""
 def changesets = opts.cs ?: []
-println changesets
-println opts.cs
-println opts.c
 
 msg += "\n\n\nChangesets Applied"
 changesets.each { msg += '\n\t' + it }
