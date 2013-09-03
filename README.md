@@ -12,7 +12,9 @@ usage: Porpoise.groovy
  -D,--dry-run                   Outputs log information only. Does not run sql scripts
  -d,--dir <arg>                 Path to SQL script directory (Optional. Defaults to startup-directory)
  -F,--force-removals            Indicates that removals SHOULD run. Otherwise, script removals are only noted.
+    --no-exit                   Does not issue the System.exit command. Useful when embedding porpoise inside applications
  -p,--database-password <arg>   Database Password (Optional)
+    --post-apply-action <arg>   Process to run after all scripts have been applied. WILL ONLY RUN IF NEW "UP" SCRIPTS HAVE BEEN APPLIED"
  -U,--url <arg>                 JDBC URL definition
  -u,--database-user <arg>       Database user (Optional)
 </pre>
@@ -98,3 +100,22 @@ CREATE TABLE PORP_SCHEMA_LOG(
 	DOWN_SCRIPT nvarchar(max) NULL
 )
 ```
+
+Post Apply Action
+-----------------
+The --post-apply-action parameter allows you the ability to run a process if (and only if) SQL scripts have been applied.
+A comma separated list of changesets will be passed as the first argument.
+
+Plugins
+-------
+The Email.groovy script in the plugins directory is a great way to alert your DBA's that some changesets are moving through the deploy pipeline.
+<pre>
+usage: Email.groovy
+ -c,--applied-changesets <arg>   Comma separated list of changests
+ -f,--from <arg>                 Email address for the "from" user
+ -m,--message <arg>              Additional Message
+ -p,--port <arg>                 SMTP server port (Default 25)
+ -s,--subject <arg>              Subject of email
+ -S,--server <arg>               SMTP server address
+ -t,--to <arg>                   Comma separated list of "to" addresses
+</pre>
