@@ -4,28 +4,22 @@
 	@Grab(group='net.sourceforge.jtds', module='jtds', version='1.2.4')
 ])
 
-final VERSION = "1.10"
+final VERSION = "1.11"
 println '''
-                                         .--.
-                  _______             .-"  .'
-          .---u"""       """"---._  ."    %
-        .'                        "--.    %
-   __.--'  o                          "".. "
-  (____.                                  ":
-   `----.__                                 ".
-           `----------__                     ".
-                 ".   . ""--.                 ".
-                   ". ".     ""-.              ".
-                     "-.)        ""-.           ".
-                                     "".         ".
-                                        "".       ".
-                                           "".      ".
-                                              "".    ".
-                        ^~^~^~^~^~^~^~^~^~^~^~^~^"".  "^~^~^~^~^
-                                              ^~^~^~^  ~^~
-                                                   ^~^~^~
-
-
+                                         __
+                                     _.-~  )
+                          _..--~~~~,'   ,-/     _
+                       .-'. . . .'   ,-','    ,' )
+                     ,'. . . _   ,--~,-'__..-'  ,'
+                   ,'. . .  (@)' ---~~~~      ,'
+                  /. . . . '~~             ,-'
+                 /. . . . .             ,-'
+                ; . . . .  - .        ,'
+               : . . . .       _     /
+              . . . . .          `-.:
+             . . . ./  - .          )
+            .  . . |  _____..---.._/ ______
+      ~---~~~~----~~~~             ~~
 '''
 println """
 Porpoise Database Migration - Version $VERSION
@@ -64,6 +58,11 @@ def noExit = opts.'no-exit' ?: false
 scriptDirectory = new File(scriptDirectoryPath)
 def postApplyProcess = opts.'post-apply-action'
 
+if (!scriptDirectory.exists()) {
+	println "\"${scriptDirectory}\" does not exist. Exiting."
+	System.exit(0)
+}
+
 sql = Sql.newInstance(dbUrl, dbUser, dbPassword, 'net.sourceforge.jtds.jdbc.Driver')
 
 databaseProduct = sql.connection.metaData.databaseProductName
@@ -79,7 +78,7 @@ if (!dryRun) {
 		scripts.findAll{it.needsDown}.sort{a,b -> b.dateApplied <=> a.dateApplied }.each { scriptMetadata ->
 			executeScript(scriptMetadata)
 		}
-		
+
 		scripts.findAll{it.needsUp}.each { scriptMetadata ->
 			executeScript(scriptMetadata)
 		}
@@ -155,7 +154,7 @@ if (!noExit) { System.exit((failed)?1:0) }
 def checkAndCreateLogTable() {
 	def tables = sql.connection.metaData.getTables(null, null, "PORP_SCHEMA_LOG", null)
 	if (tables.next()) { return }
-	
+
 	print "Preparing Porpoise database tables....."
 	executeSql("""create table PORP_SCHEMA_LOG (
 		ID varchar(50),
@@ -190,7 +189,7 @@ def determineScriptsToRun() {
 	def scripts = []
 	sql.eachRow("select * from porp_schema_log") { appliedScript ->
 		scripts.add([
-			changeset:appliedScript.changeset, 
+			changeset:appliedScript.changeset,
 			script:appliedScript.script_name,
 			up:appliedScript.up_script.asciiStream.text,
 			down:appliedScript.down_script.asciiStream.text,
@@ -201,9 +200,9 @@ def determineScriptsToRun() {
 			dateApplied:appliedScript.date_applied
 		])
 	}
-	
+
 	gatherSqlFiles('', scriptDirectory, scripts)
-	
+
 	return scripts
 }
 
@@ -218,7 +217,7 @@ def gatherSqlFiles(start, nextDir, scripts) {
 		def up = upAndDown[0].trim()
 		def down = (upAndDown.size() == 2) ? upAndDown[1].trim() : ""
 		def md5 = generateMd5(file)
-		
+
 		def applied = scripts.find { it.changeset == changeset && it.script == script }
 		if (applied == null) {
 			scripts.add([
@@ -248,7 +247,7 @@ def executeScript(scriptMetadata) {
 			scriptMetadata.applied = true
 			return
 		}
-		
+
 		if (forceRemovals && scriptMetadata.needsDown) {
 			scriptMetadata.down.split(";").each {
 				executeSql(it)
@@ -269,9 +268,9 @@ def executeScript(scriptMetadata) {
 def executeSql(def stmt) {
 	if (stmt == null || "".equals(stmt)) return
 	scriptLogLines << stmt
-	
+
 	if (dryRun) return
-	
+
 	try {
 		sql.execute(stmt)
 	}
